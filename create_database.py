@@ -3,27 +3,17 @@ import sqlite3
 def make_database():
 
     connect = sqlite3.connect("businesses.db")
+    cursor = connect.cursor()
 
-    # connect.execute("DROP TABLE IF EXISTS BUSINESSES")
-
-    # # SQL command to create a table
-    # # executing pure sql code in python
-    # connect.execute('''CREATE TABLE BUSINESSES
-    #                 (ID INT PRIMARY KEY NOT NULL,
-    #                 NAME TEXT NOT NULL,
-    #                 TYPE TEXT NOT NULL,
-    #                 LOCATION TEXT NOT NULL); 
-    #                 ''')
-
-    # create businesses table
-    connect.execute('''
+    # Create businesses table
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS BUSINESSES
     (ID INTEGER PRIMARY KEY AUTOINCREMENT,
     NAME TEXT NOT NULL);
     ''')
 
-    # create products table
-    connect.execute('''
+    # Create products table
+    cursor.execute('''
     CREATE TABLE IF NOT EXISTS PRODUCTS
     (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,6 +22,7 @@ def make_database():
     PRODUCT_PRICE INTEGER NOT NULL,
     PRODUCT_DESCRIPTION TEXT NOT NULL,
     PRODUCT_TAGS TEXT,
+    PRODUCT_IMAGE BLOB NOT NULL,
     FOREIGN KEY (PRODUCT_ID) REFERENCES BUSINESSES(ID));
     ''')
 

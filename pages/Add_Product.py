@@ -12,6 +12,8 @@ connect = sqlite3.connect("businesses.db")
 cursor = connect.cursor()
 
 
+
+
 st.set_page_config(
     page_title="Add a Product",
     page_icon="",
@@ -27,6 +29,7 @@ database = build('drive', 'v3', credentials=creds)
 
 # Make database
 make_database()
+
 
 # Checking if form has already been submitted
 if 'submitted' not in st.session_state:
@@ -60,11 +63,9 @@ def addProduct():
         product_tags = product_form.text_input("Please enter some tags to help people find your product, separated by commas: ", key="product_tags")
 
         # Upload an image
-        product_pictures = product_form.file_uploader("Upload a picture of your product", type=['jpg', 'png'], accept_multiple_files=False)
-        file_id = ""
-        if product_pictures is not None:
-            new_id = id.split("/view?usp=drivesdk")
-            file_id = "https://drive.google.com/uc?export=view&id=" + new_id[0]
+        product_picture = product_form.file_uploader("Upload a picture of your product", type=['jpg', 'png'], accept_multiple_files=False)
+        if product_picture:
+            image = product_picture.read()     
 
         submit = st.form_submit_button('Add')
 
@@ -72,6 +73,8 @@ def addProduct():
         if submit:
             if product_name == "":
                 st.error("Please enter the name of your product!")
+            elif not product_picture:
+                st.error("Please upload an image of your product!")
             else:
                 # Inserting business name into database if it doesn't exist
                 cursor.execute("INSERT INTO BUSINESSES (NAME) VALUES (?);", (business_name,))
@@ -79,22 +82,13 @@ def addProduct():
                 row_id = cursor.fetchone()[0]
                 st.write(row_id)
 
-                # Inserting product
                 cursor.execute("""
-                INSERT INTO PRODUCTS (PRODUCT_ID, PRODUCT_NAME, PRODUCT_PRICE, PRODUCT_DESCRIPTION, PRODUCT_TAGS)
-                VALUES (?, ?, ?, ?, ?);""", (row_id, product_name, product_price, product_description, product_tags))
-
-                sh.append_row([business_name, product_name, product_price, product_description, product_tags, file_id])
-                st.success("Product added successfully!")
-                #st.switch_page("streamlit_app.py")
-
-    if product_pictures is not None:
-        response = requests.get(file_id)
-        st.image(response.content)
+                INSERT INTO PRODUCTS (PRODUCT_ID, PRODUCT_NAME, PRODUCT_PRICE, PRODUCT_DESCRIPTION, PRODUCT_TAGS, PRODUCT_IMAGE)
+                VALUES (?, ?, ?, ?, ?, ?);""", (row_id, product_name, product_price, product_description, product_tags, image))
+                connect.commit()
 
 
 addProduct()
-connect.commit()
 all_data = connect.execute("""SELECT * FROM BUSINESSES""")
 for row in all_data:
     st.write(row)
