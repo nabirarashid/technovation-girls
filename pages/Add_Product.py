@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # Connecting to service account, sheets and drive
-account = ""
+account = "technovation-457720-b1c520d098e7.json"
 gc = gspread.service_account(filename=account)
 sh = gc.open("Technovation Database").sheet1
 
