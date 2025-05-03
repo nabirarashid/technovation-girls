@@ -4,10 +4,14 @@ import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import random
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Connecting to service account, sheets and drive
-url = "https://docs.google.com/spreadsheets/d/1vKVpym2pwlxGamXegwklE2KhI71P-ONExerYBNpxVXQ/edit?gid=0#gid=0"
-account = "technovation-457720-b1c520d098e7.json"
+url = os.environ["SPREADSHEET_URL"]
+account = os.environ["ACCOUNT_JSON"]
 gc = gspread.service_account(filename=account)
 sh = gc.open("Technovation Database").sheet1
 creds = service_account.Credentials.from_service_account_file(account, scopes=['https://www.googleapis.com/auth/drive'])

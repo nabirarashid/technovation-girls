@@ -5,6 +5,10 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 st.set_page_config(
     page_title="Add a Product",
@@ -12,7 +16,7 @@ st.set_page_config(
 )
 
 # Connecting to service account, sheets and drive
-account = "technovation-457720-b1c520d098e7.json"
+account = os.environ["ACCOUNT_JSON"]
 gc = gspread.service_account(filename=account)
 sh = gc.open("Technovation Database").sheet1
 
