@@ -20,8 +20,8 @@ all_products = cursor.execute("""SELECT * FROM PRODUCTS
 JOIN BUSINESSES ON PRODUCTS.business_id = BUSINESSES.id; """)
 
 cursor.execute("""
-SELECT PRODUCTS.PRODUCT_ID, PRODUCTS.PRODUCT_NAME, PRODUCTS.PRODUCT_PRICE, PRODUCTS.PRODUCT_DESCRIPTION, 
-PRODUCTS.PRODUCT_TAGS, PRODUCTS.PRODUCT_IMAGE, BUSINESSES.business_name FROM PRODUCTS
+SELECT PRODUCTS.ID, PRODUCTS.PRODUCT_NAME, PRODUCTS.PRODUCT_PRICE, PRODUCTS.PRODUCT_DESCRIPTION, 
+PRODUCTS.PRODUCT_TAGS, PRODUCTS.PRODUCT_IMAGE FROM PRODUCTS
 JOIN BUSINESSES ON PRODUCTS.business_id = BUSINESSES.id
 """ )
 
@@ -31,8 +31,7 @@ products = cursor.fetchone()
 connect.close()
 
 business_id, business_name = businesses
-product_id, business_id, product_name, product_price, product_desc, product_tags, product_image = products
-
+product_id, product_name, product_price, product_desc, product_tags, product_image = products
 
 col1, col2 = st.columns(2)
 
@@ -47,7 +46,7 @@ with col2:
     st.write(product_price)
     formatted_html = f"""
     <div style="font-family: 'Arial', sans-serif; padding: 8px 0;">
-        <div style="font-size: 13px; color: #444;">{product_business}</div>
+        <div style="font-size: 13px; color: #444;">{business_name}</div>
         <div style="font-size: 13px; color: #555;">{product_price}</div>
         <div style="font-size: 12px; color: #777;">
             {" | ".join(product_tags)}

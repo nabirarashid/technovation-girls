@@ -1,13 +1,9 @@
 import streamlit as st
-import gspread
 import io
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-import requests
 import os
 from create_database import make_database
 import sqlite3
+
 connect = sqlite3.connect("businesses.db")
 cursor = connect.cursor()
 
@@ -18,14 +14,6 @@ st.set_page_config(
     page_title="Add a Product",
     page_icon="",
 )
-
-# Connecting to service account, sheets and drive
-account = os.environ["ACCOUNT_JSON"]
-gc = gspread.service_account(filename=account)
-sh = gc.open("Technovation Database").sheet1
-
-creds = service_account.Credentials.from_service_account_file(account, scopes=['https://www.googleapis.com/auth/drive'])
-database = build('drive', 'v3', credentials=creds)
 
 # Make database
 make_database()
