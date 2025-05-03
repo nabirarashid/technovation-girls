@@ -77,14 +77,19 @@ def addProduct():
                 st.error("Please upload an image of your product!")
             else:
                 # Inserting business name into database if it doesn't exist
-                cursor.execute("INSERT INTO BUSINESSES (NAME) VALUES (?);", (business_name,))
-                cursor.execute("SELECT last_insert_rowid();")
-                row_id = cursor.fetchone()[0]
-                st.write(row_id)
+                cursor.execute("SELECT ID FROM BUSINESSES WHERE NAME = ?", (business_name,))
+                business_id_query = cursor.fetchone()
+
+                if business_id_query:
+                    business_id = business_id_query[0]  # If it exists, use the existing ID
+                else:
+                    cursor.execute("INSERT INTO BUSINESSES (NAME) VALUES (?);", (business_name,))
+                    cursor.execute("SELECT last_insert_rowid();")
+                    business_id = cursor.fetchone()[0]
 
                 cursor.execute("""
-                INSERT INTO PRODUCTS (PRODUCT_ID, PRODUCT_NAME, PRODUCT_PRICE, PRODUCT_DESCRIPTION, PRODUCT_TAGS, PRODUCT_IMAGE)
-                VALUES (?, ?, ?, ?, ?, ?);""", (row_id, product_name, product_price, product_description, product_tags, image))
+                INSERT INTO PRODUCTS (BUSINESS_ID, PRODUCT_NAME, PRODUCT_PRICE, PRODUCT_DESCRIPTION, PRODUCT_TAGS, PRODUCT_IMAGE)
+                VALUES (?, ?, ?, ?, ?, ?);""", (business_id, product_name, product_price, product_description, product_tags, image))
                 connect.commit()
 
 
