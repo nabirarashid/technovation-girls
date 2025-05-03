@@ -1,6 +1,6 @@
 import sqlite3
 
-connect  = sqlite3.connect("/Users/user/Documents/Projects/technovation/database-sql/businesses.db")
+connect = sqlite3.connect("businesses.db")
 
 # connect.execute("DROP TABLE IF EXISTS BUSINESSES")
 
@@ -13,10 +13,30 @@ connect  = sqlite3.connect("/Users/user/Documents/Projects/technovation/database
 #                 LOCATION TEXT NOT NULL); 
 #                 ''')
 
-connect.execute("INSERT INTO BUSINESSES (ID, NAME, TYPE, LOCATION) VALUES (1, 'McDonalds', 'Fast Food', 'New York')")
+# create businesses table
+'''
+CREATE TABLE IF NOT EXISTS BUSINESSES
+(ID INT PRIMARY KEY AUTOINCREMENT,
+NAME TEXT NOT NULL);
+'''
 
-all_data = connect.execute("""SELECT * FROM BUSINESSES""")
-for row in all_data:
-    print(row)
+# create products table
+'''
+CREATE TABLE IF NOT EXISTS PRODUCTS
+(
+ID INT PRIMARY KEY AUTOINCREMENT,
+BUSINESS(ID) INT NOT NULL,
+PRODUCT_NAME TEXT NOT NULL,
+PRODUCT_PRICE INT NOT NULL,
+PRODUCT_DESCRIPTION TEXT NOT NULL,
+PRODUCT_TAGS TEXT,
+FOREIGN KEY (PRODUCT_ID) REFERENCES BUSINESSES(ID));
+'''
 
-connect.close()
+#connect.execute("INSERT INTO BUSINESSES (ID, NAME, TYPE, LOCATION) VALUES (1, 'McDonalds', 'Fast Food', 'New York')")
+
+# all_data = connect.execute("""SELECT * FROM BUSINESSES""")
+# for row in all_data:
+#     print(row)
+# 
+# connect.close()

@@ -4,10 +4,7 @@ import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import random
-from dotenv import load_dotenv
 import os
-
-load_dotenv()
 
 # Connecting to service account, sheets and drive
 url = os.environ["SPREADSHEET_URL"]
