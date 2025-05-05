@@ -7,12 +7,8 @@ import io
 import random
 import time
 from PIL import Image
-from dotenv import load_dotenv
 from create_database import make_database
 import base64
-
-# Load environment variables (not required for Nominatim but keeping for future use)
-load_dotenv()
 
 def geocode_address(address):
     """Convert an address to latitude and longitude using Nominatim (OpenStreetMap)"""
@@ -87,6 +83,17 @@ st.set_page_config(
     page_icon="🔍",
     layout="wide",
 )
+
+# CSS for styling buttons
+st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #2A5213;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 st.title("Find Products Near You")
 
