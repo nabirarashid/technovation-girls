@@ -198,15 +198,9 @@ def display_product_details(product_id, container):
 
             button_cols = st.columns([0.28, 0.72])
             with button_cols[0]:
-                if st.button("Back to Previous Page"):
+                if st.button("Back to Products"):
                     if st.session_state.product_chosen:
                         st.session_state.product_chosen.pop()
-                    container.empty()
-                    st.rerun()
-
-            with button_cols[1]:       
-                if st.button("Back to Products"):
-                    st.session_state.product_chosen = []
                     container.empty()
                     st.rerun()
         
