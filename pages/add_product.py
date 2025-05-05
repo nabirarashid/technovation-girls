@@ -1,7 +1,6 @@
 import streamlit as st
 import time
 from create_database import make_database
-from dotenv import load_dotenv
 import requests
 import io
 import os
@@ -63,6 +62,17 @@ st.set_page_config(
     page_title="Add a Product",
     page_icon="",
 )
+
+# CSS for styling buttons
+st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #2A5213;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 
 business_screen = st.empty()
 
