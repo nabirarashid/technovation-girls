@@ -128,7 +128,7 @@ with st.sidebar:
             key="user_location"  # Bind to session state
 
         )
-        search_term = st.text_input("Search for products by name, business or tags", ""),
+        search_term = st.text_input("Search for products by name, business or tags", "")
         search_price = st.slider("Select the price range for products", 0, 200, (50, 100))
         search_radius = st.slider("Search radius (km)", 1, 50, 20)
 
