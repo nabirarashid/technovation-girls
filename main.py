@@ -7,6 +7,16 @@ st.set_page_config(
     layout="wide"
 )
 
+# CSS for styling buttons
+st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #2A5213;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("HomeGrown 🏬")
 
 st.write("""
