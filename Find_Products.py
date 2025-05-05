@@ -68,15 +68,19 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 @st.cache_data
 def load_db_info():
-    cursor.execute("""
-        SELECT p.ID, p.BUSINESS_ID, p.PRODUCT_NAME, p.PRODUCT_PRICE, p.PRODUCT_DESCRIPTION, 
-               p.PRODUCT_TAGS, p.PRODUCT_IMAGE,
-               b.NAME as BUSINESS_NAME, b.LATITUDE, b.LONGITUDE
-        FROM PRODUCTS p
-        JOIN BUSINESSES b ON p.BUSINESS_ID = b.ID
-        """)
-    db_info = cursor.fetchall()
-    return db_info
+    # Connect to database to get all results and store in cache
+    with sqlite3.connect("businesses.db") as connect:
+        cursor = connect.cursor()
+        cursor.execute("""
+            SELECT p.ID, p.BUSINESS_ID, p.PRODUCT_NAME, p.PRODUCT_PRICE, p.PRODUCT_DESCRIPTION, 
+                p.PRODUCT_TAGS, p.PRODUCT_IMAGE,
+                b.NAME as BUSINESS_NAME, b.LATITUDE, b.LONGITUDE
+            FROM PRODUCTS p
+            JOIN BUSINESSES b ON p.BUSINESS_ID = b.ID
+            """)
+        db_info = cursor.fetchall()
+        cursor.close()
+        return db_info
 
 
 
@@ -84,8 +88,6 @@ def load_db_info():
 make_database()
 
 # Connect to the database
-connect = sqlite3.connect("businesses.db")
-cursor = connect.cursor()
 
 st.set_page_config(
     page_title="Find Local Products",
@@ -107,40 +109,59 @@ if "user_lon" not in st.session_state:
 
 # User location input - in a sidebar
 with st.sidebar:
-    st.subheader("Your Location")
-    location_input_method = st.radio(
-        "How would you like to provide your location?",
-        ("Postal Code", "Address")
-    )
 
-    user_location = st.text_input(
-        "Enter your " + ("postal code" if location_input_method == "Postal Code" else "address")
-    )
+    st.markdown("""
+    <style>
+    div.stForm {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-    search_radius = st.slider("Search radius (km)", 1, 50, 20)
+
+    with st.form("Search by location"):
+        st.subheader("Your Location")
+        location_input_method = st.radio(
+            "How would you like to provide your location?",
+            ("Postal Code", "Address")
+        )
+        user_location = st.text_input(
+            "Enter your " + ("postal code" if location_input_method == "Postal Code" else "address")
+        )
+
+        search_radius = st.slider("Search radius (km)", 1, 50, 20)
+
+        if st.form_submit_button("Search by Location"):
+            if not user_location:
+                st.warning("Please enter your location to find nearby products.")
+            else:
+                # Geocode the user location
+                user_lat, user_lon = geocode_address(user_location)
+                
+                if user_lat is None or user_lon is None:
+                    st.error("Could not determine your location. Please enter a valid postal code or address.")
+                else:
+                    st.session_state.user_lat = user_lat
+                    st.session_state.user_lon = user_lon
+                    st.success(f"Your location found! Showing products within {search_radius} km.")
+                    
+                    # Clear any selected product when doing a new search
+                    st.session_state.product_chosen = []
+                    st.rerun()
+
     
     # Search by product tags or name
+    st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("Search Products")
-    search_term = st.text_input("Search for products by name, business or tags)", "")
-    search_price = st.slider("Select the price range for products", 5, 200, (50, 100))
+
+    with st.form("Product submission"):
+        search_term = st.text_input("Search for products by name, business or tags", "")
+        search_price = st.slider("Select the price range for products", 0, 200, (50, 100))
+        search_button = st.form_submit_button("Search")
     
-    if st.button("Find Products"):
-        if not user_location:
-            st.warning("Please enter your location to find nearby products.")
-        else:
-            # Geocode the user location
-            user_lat, user_lon = geocode_address(user_location)
-            
-            if user_lat is None or user_lon is None:
-                st.error("Could not determine your location. Please enter a valid postal code or address.")
-            else:
-                st.session_state.user_lat = user_lat
-                st.session_state.user_lon = user_lon
-                st.success(f"Your location found! Showing products within {search_radius} km.")
-                
-                # Clear any selected product when doing a new search
-                st.session_state.product_chosen = []
-                st.rerun()
 
 # Main content area
 content_placeholder = st.empty()
@@ -200,7 +221,7 @@ def display_product_details(product_id, container, cursor):
             
         
     st.markdown("<br>" * 5, unsafe_allow_html=True)
-    st.subheader("Other people liked...") # maybe add filter here too
+    st.subheader("Other people liked...")
 
     similar_products = []
     for product in db_info:
@@ -248,72 +269,82 @@ if st.session_state.product_chosen != []:
 
 else:
 
+    products = db_info
+
+    # Filter by search term
+    if search_button:
+        search_term = search_term.lower()
+        products = [
+            product for product in products
+            if (
+                search_term in product[2].lower() or
+                search_term in product[5].lower() or
+                search_term in product[7].lower()
+            )
+        ]
+
+        # Filter products filtered by search, by price
+        if search_price:
+            products = [
+                product for product in products
+                if search_price[0] <= product[3] <= search_price[1]
+            ]
+
+
     # Display product grid based on location and search criteria
     with content_placeholder.container():
-        if st.session_state.user_lat and st.session_state.user_lon:
-            # Get all businesses with their coordinates
-            if search_term:
-                similar_products = []
-                for product in db_info:
-                    if search_term in product[2] or any(search_term in product[5] for tag in product) or search_term in product[7]:
-                            similar_products.append(product)
+            filtered_products = []
+
+            if st.session_state.user_lat and st.session_state.user_lon:
+                for product in products:
+                    product_id, business_id, name, price, description, tags, image_data, business_name, business_lat, business_lon = product
+                
+                    if business_lat and business_lon:
+                        distance = calculate_distance(
+                            st.session_state.user_lat, st.session_state.user_lon, 
+                            business_lat, business_lon
+                        )
+                        if distance <= search_radius:
+                            filtered_products.append((product_id, name, image_data, business_name, distance))
+                
+                # Sort products by distance
+                filtered_products.sort(key=lambda x: x[4])
+                
+                if not filtered_products:
+                    st.info(f"No products found within {search_radius} km of your location.")
+                else:
+                    st.subheader(f"Found {len(filtered_products)} products within {search_radius} km")
                 
             else:
-                products = db_info
-            
-            # Filter products by distance
-            nearby_products = []
-            for product in products:
-                product_id, business_id, name, price, description, tags, image_data, business_name, business_lat, business_lon = product
-                if business_lat and business_lon:
-                    distance = calculate_distance(
-                        st.session_state.user_lat, st.session_state.user_lon, 
-                        business_lat, business_lon
-                    )
-                    if distance <= search_radius and search_price + 15 >= price and search_price - 15 <= price:
-                        nearby_products.append((product_id, name, image_data, business_name, distance))
-            
-            # Sort products by distance
-            nearby_products.sort(key=lambda x: x[4])  # Sort by the distance (5th element)
-            
-            if not nearby_products:
-                st.info(f"No products found within {search_radius} km of your location.")
-            else:
-                st.subheader(f"Found {len(nearby_products)} products within {search_radius} km")
+                st.info("Please enter your location in the sidebar to find products near you.")
                 
-                # Display products in a grid
-                product_index = 0
-                num_rows = len(nearby_products) // 3 + (1 if len(nearby_products) % 3 else 0)
 
-                for row in range(num_rows):
-                    cols = st.columns(3)
-                    for col in range(3):
-                        if product_index >= len(nearby_products):
-                            break
+            # Display products in a grid
+            product_index = 0
+            num_rows = len(filtered_products) // 3 + (1 if len(filtered_products) % 3 else 0)
 
-                        product_id, name, image_data, business_name, distance = nearby_products[product_index]
+            for row in range(num_rows):
+                cols = st.columns(3)
+                for col in range(3):
+                    if product_index >= len(filtered_products):
+                        break
 
-                        with cols[col]:
-                            image = Image.open(io.BytesIO(image_data))
-                            st.image(image)
-                            st.markdown(f"**{name}**")
-                            st.caption(f"{business_name} • {distance:.1f} km away")
-                            if st.button("View Details", key=f"btn_{product_index}"):
-                                st.session_state.product_chosen.append(product_id)
-                                st.rerun()
-                            
+                    product_id, name, image_data, business_name, distance = filtered_products[product_index]
 
-                        product_index += 1
-        else:
-            st.info("Please enter your location in the sidebar to find products near you.")
+                    with cols[col]:
+                        image = Image.open(io.BytesIO(image_data))
+                        st.image(image)
+                        st.markdown(f"**{name}**")
+                        st.caption(f"{business_name} • {distance:.1f} km away")
+                        if st.button("View Details", key=f"btn_{product_index}"):
+                            st.session_state.product_chosen.append(product_id)
+                            st.rerun()
+                        
 
-            # featured products
-            cursor.execute("""
-                SELECT p.ID, p.PRODUCT_NAME, p.PRODUCT_IMAGE, p.PRODUCT_PRICE, b.NAME as BUSINESS_NAME
-                FROM PRODUCTS p
-                JOIN BUSINESSES b ON p.BUSINESS_ID = b.ID
-            """)
-            products = cursor.fetchall()
+                    product_index += 1
+
+            if len(products) == 0:
+                st.warning("Couldn't find any images with that query. Try searching for something else!")
             random_products = random.sample(products, min(10, len(products)))  
 
             st.subheader("Featured Products You May Like 🌟")
@@ -326,19 +357,23 @@ else:
                         if product_index >= len(random_products):
                             break
 
-                        product_id, name, image_data, price, business_name = random_products[product_index]
+                        product_id, business_id, name, price, description, tags, image_data, business_name, business_lat, business_lon = random_products[product_index]
 
                         with cols[col]:
                             image = Image.open(io.BytesIO(image_data))
                             st.image(image)
-                            st.markdown(f"**{name}**")
-                            st.markdown(f"{business_name} • ${price:.2f}")
-                            if st.button("View Details", key=f"btn_{product_index}"):
-                                st.session_state.product_chosen.append(product_id)
-                                st.rerun()
+
+                            inner_cols = st.columns([0.7, 0.3])
+                            with inner_cols[0]:
+                                st.markdown(f"""<h2 style="font-size:30px; margin-bottom: -30px; margin-top: -20px;">
+                                                {name}
+                                            </h2>""", unsafe_allow_html=True)
+                                st.markdown(f"{business_name} • ${price:.2f}")
+                                st.markdown("<br>", unsafe_allow_html=True)
+
+                            with inner_cols[1]:
+                                if st.button("View Details", key=f"btn_{product_index}"):
+                                    st.session_state.product_chosen.append(product_id)
+                                    st.rerun()
 
                         product_index += 1
-
-
-
-connect.close()
